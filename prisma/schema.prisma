@@ -1,0 +1,109 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户模型
+model User {
+  id            String    @id @default(cuid())
+  larkUserId    String    @unique // 飞书用户ID
+  name          String    // 用户姓名
+  avatar        String?   // 头像URL
+  email         String?   @unique
+  mobile        String?   // 手机号
+  department    String?   // 部门
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // 关联关系
+  activities    Activity[] // 发布的活动
+  registrations Registration[] // 报名记录
+  comments      Comment[] // 评论记录
+
+  @@map("users")
+}
+
+// 活动模型
+model Activity {
+  id          String   @id @default(cuid())
+  title       String   // 活动标题
+  description String?  // 活动描述
+  location    String   // 活动地点
+  startTime   DateTime // 开始时间
+  endTime     DateTime // 结束时间
+  maxPlayers  Int      // 最大人数
+  currentPlayers Int   @default(0) // 当前报名人数
+  fee         Float    @default(0) // 费用
+  status      ActivityStatus @default(OPEN) // 活动状态
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 创建者
+  creatorId   String
+  creator     User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  
+  // 关联关系
+  registrations Registration[] // 报名记录
+  comments      Comment[] // 评论
+
+  @@map("activities")
+}
+
+// 活动状态枚举
+enum ActivityStatus {
+  OPEN     // 开放报名
+  FULL     // 已满员
+  CLOSED   // 已关闭
+  CANCELLED // 已取消
+  COMPLETED // 已完成
+}
+
+// 报名模型
+model Registration {
+  id         String   @id @default(cuid())
+  status     RegistrationStatus @default(REGISTERED) // 报名状态
+  registeredAt DateTime @default(now()) // 报名时间
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // 关联用户和活动
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  
+  // 确保同一用户只能报名同一活动一次
+  @@unique([userId, activityId])
+  @@map("registrations")
+}
+
+// 报名状态枚举
+enum RegistrationStatus {
+  REGISTERED // 已报名
+  CANCELLED  // 已取消
+  ATTENDED   // 已参加
+  ABSENT     // 缺席
+}
+
+// 评论模型
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   // 评论内容
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // 关联用户和活动
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  
+  @@map("comments")
+}
