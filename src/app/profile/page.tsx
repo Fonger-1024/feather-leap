@@ -56,7 +56,7 @@ interface Activity {
 }
 
 export default function ProfilePage() {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const router = useRouter()
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [activeTab, setActiveTab] = useState<'created' | 'joined'>('created')

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AuthButton } from '@/components/auth'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { Calendar, MapPin, Users, DollarSign, Clock, ArrowLeft, Edit, Trash2 } from 'lucide-react'
@@ -51,7 +51,7 @@ export default function ActivityDetail() {
   const router = useRouter()
   const { data: session } = useSession()
   const [activity, setActivity] = useState<Activity | null>(null)
-  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; avatar?: string } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {

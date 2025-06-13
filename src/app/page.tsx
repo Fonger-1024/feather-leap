@@ -37,12 +37,11 @@ interface Activity {
   }
 }
 
-export default function Home() {
-  const { data: session, status } = useSession()
+export default function Home() {  const { data: session, status } = useSession()
   const [activities, setActivities] = useState<Activity[]>([])
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; avatar?: string } | null>(null)
 
   useEffect(() => {
     if (status === 'authenticated' && session) {
@@ -76,8 +75,15 @@ export default function Home() {
       setIsLoading(false)
     }
   }
-
-  const handleCreateActivity = async (formData: any) => {
+  const handleCreateActivity = async (formData: { 
+    title: string; 
+    description: string; 
+    location: string; 
+    startTime: string; 
+    endTime: string; 
+    maxParticipants: number; 
+    fee: number; 
+  }) => {
     try {
       const response = await fetch('/api/activities', {
         method: 'POST',

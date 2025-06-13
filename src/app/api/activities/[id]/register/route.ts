@@ -1,95 +1,30 @@
-// 活动报名 API - 纯数据库版本
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
-// 备用内存存储 - 与活动API保持同步
-let fallbackActivities: any[] = [
-  {
-    id: '1',
-    title: '周末羽毛球活动',
-    description: '欢迎大家参加周末羽毛球活动，一起挥洒汗水！',
-    location: '体育中心A馆',
-    startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    endTime: new Date(Date.now() + 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
-    maxParticipants: 8,
-    fee: 30,
-    status: 'OPEN',
-    creatorId: 'mock_user_1',
-    creator: {
-      id: 'mock_user_1',
-      name: '张三',
-      avatar: null
-    },
-    registrations: [
-      {
-        id: '1',
-        userId: 'mock_user_1',
-        status: 'CONFIRMED',
-        user: {
-          id: 'mock_user_1',
-          name: '张三'
-        }
-      }
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    title: '羽毛球训练营',
-    description: '专业教练指导，提升技术水平',
-    location: '体育中心B馆',
-    startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-    endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
-    maxParticipants: 12,
-    fee: 50,
-    status: 'OPEN',
-    creatorId: '2',
-    creator: {
-      id: '2',
-      name: '李四',
-      avatar: null
-    },
-    registrations: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()  }
-]
-
-let nextRegistrationId = 2
-let useFallback = false
-
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
     }
 
-    const userId = (session as any).user?.id || (session as any).user?.larkUserId || '1'
+    const userId = (session as { user: { larkUserId?: string; id?: string } }).user?.larkUserId || (session as { user: { larkUserId?: string; id?: string } }).user?.id
 
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
+    // 检查活动是否存在
     const activity = await prisma.activity.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         _count: {
           select: {
             registrations: {
               where: {
-                status: 'CONFIRMED',
+                status: 'REGISTERED',
               },
             },
           },
@@ -99,49 +34,44 @@ export async function POST(
 
     if (!activity) {
       return NextResponse.json(
-        { error: 'Activity not found' },
+        { error: '活动不存在' },
         { status: 404 }
       )
     }
 
     if (activity.status !== 'OPEN') {
       return NextResponse.json(
-        { error: 'Activity is not open for registration' },
+        { error: '活动已关闭报名' },
         { status: 400 }
       )
     }
 
-    // Check if activity is full
-    if (activity._count.registrations >= activity.maxParticipants) {
+    if (activity._count.registrations >= activity.maxPlayers) {
       return NextResponse.json(
-        { error: 'Activity is full' },
+        { error: '活动人数已满' },
         { status: 400 }
       )
-    }
-
-    // Check if user is already registered
+    }    // 检查是否已经报名
     const existingRegistration = await prisma.registration.findFirst({
       where: {
-        activityId: params.id,
-        userId: user.id,
-        status: {
-          in: ['CONFIRMED', 'PENDING'],
-        },
+        activityId: id,
+        user: { larkUserId: userId },
       },
     })
 
     if (existingRegistration) {
       return NextResponse.json(
-        { error: 'Already registered for this activity' },
+        { error: '您已经报名了这个活动' },
         { status: 400 }
       )
     }
 
+    // 创建报名记录
     const registration = await prisma.registration.create({
       data: {
-        activityId: params.id,
-        userId: user.id,
-        status: 'CONFIRMED',
+        activity: { connect: { id } },
+        user: { connect: { larkUserId: userId } },
+        status: 'REGISTERED',
       },
       include: {
         user: {
@@ -149,22 +79,29 @@ export async function POST(
             id: true,
             name: true,
             avatar: true,
+            larkUserId: true,
           },
         },
-        activity: {
-          select: {
-            id: true,
-            title: true,
-          },
+      },
+    })    // 更新活动的当前参与人数
+    await prisma.activity.update({
+      where: { id },
+      data: {
+        currentPlayers: {
+          increment: 1,
         },
       },
     })
 
-    return NextResponse.json(registration, { status: 201 })
+    return NextResponse.json({
+      message: '报名成功',
+      registration,
+      source: 'database'
+    })
   } catch (error) {
-    console.error('Error registering for activity:', error)
+    console.error('报名失败:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: '报名失败' },
       { status: 500 }
     )
   }
@@ -172,55 +109,54 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    if (!session?.user) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { larkUserId: session.user.id },
-    })
+    const userId = (session as { user: { larkUserId?: string; id?: string } }).user?.larkUserId || (session as { user: { larkUserId?: string; id?: string } }).user?.id
 
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
+    // 查找报名记录
     const registration = await prisma.registration.findFirst({
       where: {
-        activityId: params.id,
-        userId: user.id,
-        status: {
-          in: ['CONFIRMED', 'PENDING'],
-        },
+        activityId: id,
+        user: { larkUserId: userId },
+        status: 'REGISTERED',
       },
     })
 
     if (!registration) {
       return NextResponse.json(
-        { error: 'Registration not found' },
+        { error: '您没有报名这个活动' },
         { status: 404 }
       )
     }
 
-    await prisma.registration.update({
+    // 删除报名记录
+    await prisma.registration.delete({
       where: { id: registration.id },
-      data: { status: 'CANCELLED' },
+    })    // 更新活动的当前参与人数
+    await prisma.activity.update({
+      where: { id },
+      data: {
+        currentPlayers: {
+          decrement: 1,
+        },
+      },
     })
 
-    return NextResponse.json({ message: 'Registration cancelled successfully' })
+    return NextResponse.json({
+      message: '取消报名成功',
+      source: 'database'
+    })
   } catch (error) {
-    console.error('Error cancelling registration:', error)
+    console.error('取消报名失败:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: '取消报名失败' },
       { status: 500 }
     )
   }

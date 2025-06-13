@@ -4,13 +4,12 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
-export async function GET(request: NextRequest) {
-  try {
+export async function GET(request: NextRequest) {  try {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     const creatorId = searchParams.get('creatorId')
 
-    const whereClause: any = {}
+    const whereClause: Record<string, unknown> = {}
 
     if (status && status !== 'ALL') {
       whereClause.status = status
@@ -93,12 +92,11 @@ export async function POST(request: NextRequest) {
 
     if (!data.title || !data.location || !data.startTime || !data.endTime) {
       return NextResponse.json(
-        { error: '请填写所有必填字段' },
-        { status: 400 }
+        { error: '请填写所有必填字段' },      { status: 400 }
       )
     }
 
-    const userId = (session as any).user?.larkUserId || (session as any).user?.id
+    const userId = (session as { user: { larkUserId?: string; id?: string } }).user?.larkUserId || (session as { user: { larkUserId?: string; id?: string } }).user?.id
 
     const newActivity = await prisma.activity.create({
       data: {

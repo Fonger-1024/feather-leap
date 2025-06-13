@@ -1,19 +1,20 @@
 // 用户个人资料 API - 纯数据库版本
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
-        { status: 401 }      )
+        { status: 401 }
+      )
     }
 
-    const userId = (session as any).user?.larkUserId || (session as any).user?.id
+    const userId = (session as { user: { larkUserId?: string; id?: string } }).user?.larkUserId || (session as { user: { larkUserId?: string; id?: string } }).user?.id
 
     // 直接使用数据库
     const user = await prisma.user.findUnique({

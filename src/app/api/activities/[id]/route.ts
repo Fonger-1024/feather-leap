@@ -1,71 +1,16 @@
-// 活动详情 API - 纯数据库版本
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
-// 备用内存存储 - 与主活动API保持同步
-let fallbackActivities: any[] = [
-  {
-    id: '1',
-    title: '周末羽毛球活动',
-    description: '欢迎大家参加周末羽毛球活动，一起挥洒汗水！',
-    location: '体育中心A馆',
-    startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    endTime: new Date(Date.now() + 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
-    maxParticipants: 8,
-    fee: 30,
-    status: 'OPEN',
-    creatorId: 'mock_user_1',
-    creator: {
-      id: 'mock_user_1',
-      name: '张三',
-      avatar: null
-    },
-    registrations: [
-      {
-        id: '1',
-        userId: 'mock_user_1',
-        status: 'CONFIRMED',
-        user: {
-          id: 'mock_user_1',
-          name: '张三'
-        }
-      }
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    title: '羽毛球训练营',
-    description: '专业教练指导，提升技术水平',
-    location: '体育中心B馆',
-    startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-    endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
-    maxParticipants: 12,
-    fee: 50,
-    status: 'OPEN',
-    creatorId: '2',
-    creator: {
-      id: '2',
-      name: '李四',
-      avatar: null
-    },
-    registrations: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()  }
-]
-
-let useFallback = false
-
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const activity = await prisma.activity.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         creator: {
           select: {
@@ -130,19 +75,20 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: '未登录' }, { status: 401 })
     }
 
     const data = await request.json()
-    const userId = (session as any).user?.larkUserId || (session as any).user?.id
+    const userId = (session as { user: { larkUserId?: string; id?: string } }).user?.larkUserId || (session as { user: { larkUserId?: string; id?: string } }).user?.id
 
     const activity = await prisma.activity.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         creator: true
       }
@@ -160,10 +106,8 @@ export async function PUT(
         { error: '只有创建者可以编辑活动' },
         { status: 403 }
       )
-    }
-
-    const updatedActivity = await prisma.activity.update({
-      where: { id: params.id },
+    }    const updatedActivity = await prisma.activity.update({
+      where: { id },
       data: {
         title: data.title,
         description: data.description,
@@ -205,18 +149,19 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: '未登录' }, { status: 401 })
     }
 
-    const userId = (session as any).user?.larkUserId || (session as any).user?.id
+    const userId = (session as { user: { larkUserId?: string; id?: string } }).user?.larkUserId || (session as { user: { larkUserId?: string; id?: string } }).user?.id
 
     const activity = await prisma.activity.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         creator: true
       }
@@ -234,10 +179,8 @@ export async function DELETE(
         { error: '只有创建者可以删除活动' },
         { status: 403 }
       )
-    }
-
-    await prisma.activity.delete({
-      where: { id: params.id }
+    }    await prisma.activity.delete({
+      where: { id }
     })
 
     return NextResponse.json({ 

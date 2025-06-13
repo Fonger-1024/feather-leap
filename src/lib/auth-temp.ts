@@ -65,17 +65,17 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt'
   },
-  callbacks: {
-    async jwt({ token, user }) {
+  callbacks: {    async jwt({ token, user }) {
       if (user) {
-        token.larkUserId = user.larkUserId
+        token.larkUserId = (user as { larkUserId?: string }).larkUserId
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
+        // @ts-expect-error - NextAuth session type extension
         session.user.id = token.sub!
-        // @ts-ignore
+        // @ts-expect-error - NextAuth session type extension
         session.user.larkUserId = token.larkUserId as string
       }
       return session

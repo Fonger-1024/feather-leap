@@ -1,12 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn, getSession } from 'next-auth/react'
+import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { User, ArrowRight } from 'lucide-react'
+import { User } from 'lucide-react'
 
 export default function SignIn() {
   const [username, setUsername] = useState('')

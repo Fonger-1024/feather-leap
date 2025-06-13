@@ -173,7 +173,15 @@ export function ActivityCard({ activity, currentUserId, onRegister, onUnregister
 }
 
 interface CreateActivityFormProps {
-  onSubmit: (data: any) => Promise<void>
+  onSubmit: (data: { 
+    title: string; 
+    description: string; 
+    location: string; 
+    startTime: string; 
+    endTime: string; 
+    maxParticipants: number; 
+    fee: number; 
+  }) => Promise<void>
   onCancel: () => void
 }
 
