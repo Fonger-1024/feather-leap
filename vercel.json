@@ -3,5 +3,20 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "env": {
+    "SKIP_ENV_VALIDATION": "1",
+    "PRISMA_GENERATE_DATAPROXY": "true"
+  },
+  "build": {
+    "env": {
+      "SKIP_ENV_VALIDATION": "1",
+      "PRISMA_GENERATE_DATAPROXY": "true"
+    }
+  },
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "runtime": "nodejs18.x"
+    }
+  }
 }
