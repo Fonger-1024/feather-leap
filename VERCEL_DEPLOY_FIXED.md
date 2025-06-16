@@ -1,15 +1,25 @@
-# Vercel 部署指南
+# 🎉 Vercel部署问题修复完成 - 最终状态报告
 
-## 🚀 修复的问题
+## ✅ 已解决的问题
 
 ### 1. Prisma Client 生成问题
-- ✅ 在 `package.json` 中添加了 `prisma generate` 到构建脚本
-- ✅ 添加了 `postinstall` 脚本自动生成 Prisma Client
-- ✅ 简化了 `vercel.json` 配置，移除了不兼容的函数运行时配置
+- **问题**: `Prisma has detected that this project was built on Vercel, which caches dependencies`
+- **解决方案**: 
+  - ✅ 在 `package.json` 中添加 `postinstall: "prisma generate"`
+  - ✅ 在构建脚本中添加 `prisma generate && next build`
+  - ✅ 设置环境变量 `PRISMA_GENERATE_DATAPROXY=true`
 
-### 2. 函数运行时错误修复
-- ✅ 移除了错误的 `functions` 配置 (Next.js 自动处理)
-- ✅ 使用标准的 Next.js 框架配置
+### 2. 函数运行时版本错误
+- **问题**: `Function Runtimes must have a valid version`
+- **解决方案**: 
+  - ✅ 简化 `vercel.json` 配置，移除不必要的函数配置
+  - ✅ 让 Vercel 自动处理 Next.js 函数运行时
+
+### 3. 页面数据收集失败
+- **问题**: `Failed to collect page data for /activities/[id]/register`
+- **解决方案**: 
+  - ✅ 优化 Next.js 配置，设置 `output: 'standalone'`
+  - ✅ 确保API路由不被错误地静态化
 
 ## 📋 部署步骤
 
