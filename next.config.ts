@@ -13,8 +13,8 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['@prisma/client'],
   },
-  // 确保API路由不被静态化
-  output: 'standalone',
+  // 移除standalone模式以避免Vercel部署时的Prisma问题
+  // output: 'standalone',
 };
 
 export default nextConfig;
