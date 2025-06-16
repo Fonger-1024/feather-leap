@@ -1,22 +1,8 @@
 {
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
   "framework": "nextjs",
-  "outputDirectory": ".next",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
   "env": {
-    "SKIP_ENV_VALIDATION": "1",
-    "PRISMA_GENERATE_DATAPROXY": "true"
-  },
-  "build": {
-    "env": {
-      "SKIP_ENV_VALIDATION": "1",
-      "PRISMA_GENERATE_DATAPROXY": "true"
-    }
-  },
-  "functions": {
-    "src/app/api/**/*.ts": {
-      "runtime": "nodejs18.x"
-    }
+    "SKIP_ENV_VALIDATION": "1"
   }
 }
